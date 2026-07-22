@@ -1,0 +1,26 @@
+# Build artifacts
+/telescope
+*.exe
+
+# Credentials — never commit
+*-sa.json
+telescope-sa.json
+*.pem
+*.key
+*.p12
+.env
+.env.*
+credentials.json
+service-account*.json
+
+# Generated reports / scan output
+report.json
+report.csv
+report.xlsx
+report.md
+*.report.json
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
