@@ -34,11 +34,11 @@ func (p *Provider) ListInstances(ctx context.Context) ([]model.Instance, error) 
 		}
 	}
 	return []model.Instance{
-		base("i-001", "web-1", "e2-standard-4", 4, 16, 10),   // cpu-bound, low mem
-		base("i-002", "web-2", "e2-standard-4", 4, 16, 10),   // idle
-		base("i-003", "cache-1", "n2-highmem-8", 8, 64, 16),  // memory-bound
-		base("i-004", "api-1", "e2-standard-8", 8, 32, 16),   // balanced
-		base("i-005", "edge-1", "n2-standard-4", 4, 16, 32),  // network-bound
+		base("i-001", "web-1", "e2-standard-4", 4, 16, 10),     // cpu-bound, low mem
+		base("i-002", "web-2", "e2-standard-4", 4, 16, 10),     // idle
+		base("i-003", "cache-1", "n2-highmem-8", 8, 64, 16),    // memory-bound
+		base("i-004", "api-1", "e2-standard-8", 8, 32, 16),     // balanced
+		base("i-005", "edge-1", "n2-standard-4", 4, 16, 32),    // network-bound
 		base("i-006", "batch-1", "e2-standard-16", 16, 64, 32), // idle/over-provisioned
 	}, nil
 }

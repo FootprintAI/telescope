@@ -11,12 +11,12 @@ import "github.com/footprintai/telescope/internal/model"
 type Bound string
 
 const (
-	BoundCPU         Bound = "cpu-bound"
-	BoundMemory      Bound = "memory-bound"
-	BoundNetwork     Bound = "network-bound"
-	BoundDisk        Bound = "disk-bound"
-	BoundIdle        Bound = "idle"          // all dimensions under the idle floor
-	BoundBalanced    Bound = "balanced"      // no single dimension dominates
+	BoundCPU          Bound = "cpu-bound"
+	BoundMemory       Bound = "memory-bound"
+	BoundNetwork      Bound = "network-bound"
+	BoundDisk         Bound = "disk-bound"
+	BoundIdle         Bound = "idle"     // all dimensions under the idle floor
+	BoundBalanced     Bound = "balanced" // no single dimension dominates
 	BoundInsufficient Bound = "insufficient-data"
 )
 

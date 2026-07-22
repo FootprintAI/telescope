@@ -2,7 +2,8 @@
 // instances, GKE nodepools (inventory), and Cloud Monitoring metrics.
 //
 // Required read-only roles on the service account:
-//   roles/compute.viewer, roles/container.viewer, roles/monitoring.viewer
+//
+//	roles/compute.viewer, roles/container.viewer, roles/monitoring.viewer
 package gcp
 
 import (

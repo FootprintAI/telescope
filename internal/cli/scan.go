@@ -11,8 +11,8 @@ import (
 
 	"github.com/footprintai/telescope/internal/analyze"
 	"github.com/footprintai/telescope/internal/model"
-	"github.com/footprintai/telescope/internal/provider"
 	"github.com/footprintai/telescope/internal/pricing"
+	"github.com/footprintai/telescope/internal/provider"
 	awsprov "github.com/footprintai/telescope/internal/provider/aws"
 	"github.com/footprintai/telescope/internal/provider/gcp"
 	"github.com/footprintai/telescope/internal/provider/mock"

@@ -4,11 +4,11 @@ import "testing"
 
 func TestFamilyOf(t *testing.T) {
 	cases := map[string]string{
-		"n2d-highmem-8":     "n2d",
-		"e2-custom-4-8192":  "e2",
-		"n1-standard-4":     "n1",
-		"c3-standard-88":    "c3",
-		"unknowntype":       "unknowntype",
+		"n2d-highmem-8":    "n2d",
+		"e2-custom-4-8192": "e2",
+		"n1-standard-4":    "n1",
+		"c3-standard-88":   "c3",
+		"unknowntype":      "unknowntype",
 	}
 	for in, want := range cases {
 		if got := familyOf(in); got != want {
