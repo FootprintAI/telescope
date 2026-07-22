@@ -1,0 +1,455 @@
+{
+  "schema": "1",
+  "tool": "dev",
+  "generated_at": "2026-07-22T16:44:38.146772776Z",
+  "provider": "mock",
+  "window": {
+    "lookback_hours": 336,
+    "end": "2026-07-22T16:44:38.146756445Z"
+  },
+  "instances": [
+    {
+      "instance": {
+        "ID": "i-001",
+        "Name": "web-1",
+        "Provider": "mock",
+        "Project": "demo",
+        "Region": "us-central1",
+        "Zone": "us-central1-a",
+        "MachineType": "e2-standard-4",
+        "VCPU": 4,
+        "MemGB": 16,
+        "NICGbps": 10,
+        "Disks": [
+          {
+            "Name": "web-1-boot",
+            "SizeGB": 100,
+            "Type": "pd-ssd",
+            "IOPSCap": 3000
+          }
+        ],
+        "Labels": {
+          "env": "prod"
+        },
+        "Metrics": {
+          "CPUUtil": {
+            "P50": 0.574,
+            "P95": 0.82,
+            "Max": 0.87,
+            "Present": true
+          },
+          "MemUtil": {
+            "P50": 0.13999999999999999,
+            "P95": 0.2,
+            "Max": 0.22999999999999998,
+            "Present": true
+          },
+          "NetBytesPerSec": {
+            "P50": 43750000,
+            "P95": 62500000,
+            "Max": 62500000.05,
+            "Present": true
+          },
+          "DiskIOPS": {
+            "P50": 210,
+            "P95": 300,
+            "Max": 300.05,
+            "Present": true
+          },
+          "Samples": 4032
+        }
+      },
+      "analysis": {
+        "instance_id": "i-001",
+        "bound": "cpu-bound",
+        "normalized_p95": {
+          "cpu": 0.82,
+          "disk": 0.1,
+          "mem": 0.2,
+          "net": 0.05
+        }
+      },
+      "pricing": {
+        "hourly_usd": 0.134,
+        "monthly_usd": 97.82,
+        "currency": "USD",
+        "source": "static"
+      }
+    },
+    {
+      "instance": {
+        "ID": "i-002",
+        "Name": "web-2",
+        "Provider": "mock",
+        "Project": "demo",
+        "Region": "us-central1",
+        "Zone": "us-central1-a",
+        "MachineType": "e2-standard-4",
+        "VCPU": 4,
+        "MemGB": 16,
+        "NICGbps": 10,
+        "Disks": [
+          {
+            "Name": "web-2-boot",
+            "SizeGB": 100,
+            "Type": "pd-ssd",
+            "IOPSCap": 3000
+          }
+        ],
+        "Labels": {
+          "env": "prod"
+        },
+        "Metrics": {
+          "CPUUtil": {
+            "P50": 0.041999999999999996,
+            "P95": 0.06,
+            "Max": 0.06899999999999999,
+            "Present": true
+          },
+          "MemUtil": {
+            "P50": 0.055999999999999994,
+            "P95": 0.08,
+            "Max": 0.092,
+            "Present": true
+          },
+          "NetBytesPerSec": {
+            "P50": 17500000,
+            "P95": 25000000,
+            "Max": 25000000.05,
+            "Present": true
+          },
+          "DiskIOPS": {
+            "P50": 105,
+            "P95": 150,
+            "Max": 150.05,
+            "Present": true
+          },
+          "Samples": 4032
+        }
+      },
+      "analysis": {
+        "instance_id": "i-002",
+        "bound": "idle",
+        "normalized_p95": {
+          "cpu": 0.06,
+          "disk": 0.05,
+          "mem": 0.08,
+          "net": 0.02
+        }
+      },
+      "pricing": {
+        "hourly_usd": 0.134,
+        "monthly_usd": 97.82,
+        "currency": "USD",
+        "source": "static"
+      }
+    },
+    {
+      "instance": {
+        "ID": "i-003",
+        "Name": "cache-1",
+        "Provider": "mock",
+        "Project": "demo",
+        "Region": "us-central1",
+        "Zone": "us-central1-a",
+        "MachineType": "n2-highmem-8",
+        "VCPU": 8,
+        "MemGB": 64,
+        "NICGbps": 16,
+        "Disks": [
+          {
+            "Name": "cache-1-boot",
+            "SizeGB": 100,
+            "Type": "pd-ssd",
+            "IOPSCap": 3000
+          }
+        ],
+        "Labels": {
+          "env": "prod"
+        },
+        "Metrics": {
+          "CPUUtil": {
+            "P50": 0.175,
+            "P95": 0.25,
+            "Max": 0.2875,
+            "Present": true
+          },
+          "MemUtil": {
+            "P50": 0.616,
+            "P95": 0.88,
+            "Max": 0.93,
+            "Present": true
+          },
+          "NetBytesPerSec": {
+            "P50": 140000000,
+            "P95": 200000000,
+            "Max": 200000000.05,
+            "Present": true
+          },
+          "DiskIOPS": {
+            "P50": 630,
+            "P95": 900,
+            "Max": 900.05,
+            "Present": true
+          },
+          "Samples": 4032
+        }
+      },
+      "analysis": {
+        "instance_id": "i-003",
+        "bound": "memory-bound",
+        "normalized_p95": {
+          "cpu": 0.25,
+          "disk": 0.3,
+          "mem": 0.88,
+          "net": 0.1
+        }
+      },
+      "pricing": {
+        "hourly_usd": 0.524,
+        "monthly_usd": 382.52,
+        "currency": "USD",
+        "source": "static"
+      }
+    },
+    {
+      "instance": {
+        "ID": "i-004",
+        "Name": "api-1",
+        "Provider": "mock",
+        "Project": "demo",
+        "Region": "us-central1",
+        "Zone": "us-central1-a",
+        "MachineType": "e2-standard-8",
+        "VCPU": 8,
+        "MemGB": 32,
+        "NICGbps": 16,
+        "Disks": [
+          {
+            "Name": "api-1-boot",
+            "SizeGB": 100,
+            "Type": "pd-ssd",
+            "IOPSCap": 3000
+          }
+        ],
+        "Labels": {
+          "env": "prod"
+        },
+        "Metrics": {
+          "CPUUtil": {
+            "P50": 0.385,
+            "P95": 0.55,
+            "Max": 0.6000000000000001,
+            "Present": true
+          },
+          "MemUtil": {
+            "P50": 0.364,
+            "P95": 0.52,
+            "Max": 0.5700000000000001,
+            "Present": true
+          },
+          "NetBytesPerSec": {
+            "P50": 420000000,
+            "P95": 600000000,
+            "Max": 600000000.05,
+            "Present": true
+          },
+          "DiskIOPS": {
+            "P50": 735,
+            "P95": 1050,
+            "Max": 1050.05,
+            "Present": true
+          },
+          "Samples": 4032
+        }
+      },
+      "analysis": {
+        "instance_id": "i-004",
+        "bound": "balanced",
+        "normalized_p95": {
+          "cpu": 0.55,
+          "disk": 0.35,
+          "mem": 0.52,
+          "net": 0.3
+        }
+      },
+      "pricing": {
+        "hourly_usd": 0.268,
+        "monthly_usd": 195.64,
+        "currency": "USD",
+        "source": "static"
+      }
+    },
+    {
+      "instance": {
+        "ID": "i-005",
+        "Name": "edge-1",
+        "Provider": "mock",
+        "Project": "demo",
+        "Region": "us-central1",
+        "Zone": "us-central1-a",
+        "MachineType": "n2-standard-4",
+        "VCPU": 4,
+        "MemGB": 16,
+        "NICGbps": 32,
+        "Disks": [
+          {
+            "Name": "edge-1-boot",
+            "SizeGB": 100,
+            "Type": "pd-ssd",
+            "IOPSCap": 3000
+          }
+        ],
+        "Labels": {
+          "env": "prod"
+        },
+        "Metrics": {
+          "CPUUtil": {
+            "P50": 0.21,
+            "P95": 0.3,
+            "Max": 0.345,
+            "Present": true
+          },
+          "MemUtil": {
+            "P50": 0.175,
+            "P95": 0.25,
+            "Max": 0.2875,
+            "Present": true
+          },
+          "NetBytesPerSec": {
+            "P50": 2380000000,
+            "P95": 3400000000,
+            "Max": 3400000000.05,
+            "Present": true
+          },
+          "DiskIOPS": {
+            "P50": 315,
+            "P95": 450,
+            "Max": 450.05,
+            "Present": true
+          },
+          "Samples": 4032
+        }
+      },
+      "analysis": {
+        "instance_id": "i-005",
+        "bound": "network-bound",
+        "normalized_p95": {
+          "cpu": 0.3,
+          "disk": 0.15,
+          "mem": 0.25,
+          "net": 0.85
+        }
+      },
+      "pricing": {
+        "hourly_usd": 0.194,
+        "monthly_usd": 141.62,
+        "currency": "USD",
+        "source": "static"
+      }
+    },
+    {
+      "instance": {
+        "ID": "i-006",
+        "Name": "batch-1",
+        "Provider": "mock",
+        "Project": "demo",
+        "Region": "us-central1",
+        "Zone": "us-central1-a",
+        "MachineType": "e2-standard-16",
+        "VCPU": 16,
+        "MemGB": 64,
+        "NICGbps": 32,
+        "Disks": [
+          {
+            "Name": "batch-1-boot",
+            "SizeGB": 100,
+            "Type": "pd-ssd",
+            "IOPSCap": 3000
+          }
+        ],
+        "Labels": {
+          "env": "prod"
+        },
+        "Metrics": {
+          "CPUUtil": {
+            "P50": 0.034999999999999996,
+            "P95": 0.05,
+            "Max": 0.057499999999999996,
+            "Present": true
+          },
+          "MemUtil": {
+            "P50": 0,
+            "P95": 0,
+            "Max": 0,
+            "Present": false
+          },
+          "NetBytesPerSec": {
+            "P50": 84000000,
+            "P95": 120000000,
+            "Max": 120000000.05,
+            "Present": true
+          },
+          "DiskIOPS": {
+            "P50": 84,
+            "P95": 120,
+            "Max": 120.05,
+            "Present": true
+          },
+          "Samples": 4032
+        }
+      },
+      "analysis": {
+        "instance_id": "i-006",
+        "bound": "idle",
+        "normalized_p95": {
+          "cpu": 0.05,
+          "disk": 0.04,
+          "mem": -1,
+          "net": 0.03
+        },
+        "notes": [
+          "memory metric missing (monitoring agent not installed?)"
+        ]
+      },
+      "pricing": {
+        "hourly_usd": 0.536,
+        "monthly_usd": 391.28,
+        "currency": "USD",
+        "source": "static"
+      }
+    }
+  ],
+  "node_pools": [
+    {
+      "Cluster": "demo-gke",
+      "Name": "default-pool",
+      "Provider": "mock",
+      "Region": "us-central1",
+      "MachineType": "e2-standard-4",
+      "VCPU": 4,
+      "MemGB": 16,
+      "NodeCount": 3
+    }
+  ],
+  "summary": {
+    "instance_count": 6,
+    "node_pool_count": 1,
+    "bound_counts": {
+      "balanced": 1,
+      "cpu-bound": 1,
+      "idle": 2,
+      "memory-bound": 1,
+      "network-bound": 1
+    },
+    "total_vcpu": 44,
+    "total_mem_gb": 208
+  },
+  "cost": {
+    "currency": "USD",
+    "total_hourly_usd": 1.79,
+    "total_monthly_usd": 1306.7,
+    "priced_instances": 6,
+    "unpriced_instances": 0
+  }
+}
