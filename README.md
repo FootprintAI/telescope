@@ -195,3 +195,7 @@ scripts/                 create-readonly-sa.sh (GCP)
 ```bash
 go test ./...
 ```
+
+## License
+
+Licensed under the [Apache License 2.0](LICENSE).
