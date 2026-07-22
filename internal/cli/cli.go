@@ -15,6 +15,8 @@ import (
 	"io"
 	"os"
 	"time"
+
+	"github.com/footprintai/telescope/internal/version"
 )
 
 // Run dispatches a subcommand. Returns a process exit code.
@@ -27,6 +29,9 @@ func Run(args []string) int {
 	switch args[0] {
 	case "scan":
 		return runScan(ctx, args[1:])
+	case "version", "-v", "--version":
+		fmt.Println(version.V)
+		return 0
 	case "-h", "--help", "help":
 		usage(os.Stdout)
 		return 0
@@ -42,6 +47,7 @@ func usage(w io.Writer) {
 
 USAGE:
   telescope scan [flags]   Inventory + utilization -> shareable report
+  telescope version        Print the build version
 
 The report (JSON) is the handoff to the cloud service, which generates the
 Containarium consolidation recommendation.

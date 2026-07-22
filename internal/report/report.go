@@ -8,6 +8,7 @@ import (
 	"github.com/footprintai/telescope/internal/analyze"
 	"github.com/footprintai/telescope/internal/model"
 	"github.com/footprintai/telescope/internal/pricing"
+	"github.com/footprintai/telescope/internal/version"
 )
 
 // SchemaVersion is bumped on breaking changes to the report contract.
@@ -16,6 +17,7 @@ const SchemaVersion = "1"
 // Report is the full Stage-A artifact.
 type Report struct {
 	Schema      string           `json:"schema"`
+	Tool        string           `json:"tool"`
 	GeneratedAt time.Time        `json:"generated_at"`
 	Provider    string           `json:"provider"`
 	Window      WindowInfo       `json:"window"`
@@ -65,6 +67,7 @@ func Build(provider string, w model.Window, insts []model.Instance, pools []mode
 	}
 	rep := Report{
 		Schema:      SchemaVersion,
+		Tool:        version.V,
 		GeneratedAt: time.Now().UTC(),
 		Provider:    provider,
 		Window:      WindowInfo{LookbackHours: w.Lookback.Hours(), End: w.End},

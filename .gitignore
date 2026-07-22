@@ -1,6 +1,7 @@
 # Build artifacts
 /telescope
 *.exe
+/dist/
 
 # Credentials — never commit
 *-sa.json
