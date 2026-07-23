@@ -42,6 +42,12 @@ func filter(field, value string) awspricingtypes.Filter {
 
 // Price implements Pricer.
 func (p *awsPricer) Price(ctx context.Context, in model.Instance) (PriceInfo, bool) {
+	// The Price List API serves on-demand terms only; Spot prices are dynamic
+	// (DescribeSpotPriceHistory). Leave Spot instances unpriced rather than
+	// overstating them at on-demand rates.
+	if in.ProvisioningModel == model.ProvisioningSpot {
+		return PriceInfo{}, false
+	}
 	key := in.Region + "/" + in.MachineType
 	if v, ok := p.cache[key]; ok {
 		return v, v.HourlyUSD > 0

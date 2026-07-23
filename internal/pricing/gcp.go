@@ -25,6 +25,9 @@ type gcpPricer struct {
 	// keyed by "region/family" -> USD per vCPU-hour / per GB-hour
 	core map[string]float64
 	ram  map[string]float64
+	// same keys, Spot (usage type "Preemptible") rates
+	spotCore map[string]float64
+	spotRam  map[string]float64
 }
 
 // familyDisplay maps a machine-type family prefix to its catalog display token.
@@ -37,7 +40,7 @@ var familyDisplay = []struct{ key, token string }{
 	{"a2", "A2"}, {"a3", "A3"}, {"g2", "G2"},
 }
 
-var priceExcludeTokens = []string{"Spot", "Preemptible", "Commitment", "Sole Tenancy", "Custom", "Premium"}
+var priceExcludeTokens = []string{"Commitment", "Sole Tenancy", "Custom", "Premium"}
 
 func newGCPPricer(ctx context.Context, credentialsFile string) (*gcpPricer, error) {
 	var opts []option.ClientOption
@@ -48,7 +51,13 @@ func newGCPPricer(ctx context.Context, credentialsFile string) (*gcpPricer, erro
 	if err != nil {
 		return nil, err
 	}
-	return &gcpPricer{cli: cli, core: map[string]float64{}, ram: map[string]float64{}}, nil
+	return &gcpPricer{
+		cli:      cli,
+		core:     map[string]float64{},
+		ram:      map[string]float64{},
+		spotCore: map[string]float64{},
+		spotRam:  map[string]float64{},
+	}, nil
 }
 
 // build lazily indexes all Compute Engine core/ram SKUs once.
@@ -69,10 +78,24 @@ func (p *gcpPricer) build(ctx context.Context) error {
 
 func (p *gcpPricer) indexSku(sku *billingpb.Sku) {
 	cat := sku.GetCategory()
-	if cat.GetResourceFamily() != "Compute" || cat.GetUsageType() != "OnDemand" {
+	if cat.GetResourceFamily() != "Compute" {
 		return
 	}
 	desc := sku.GetDescription()
+	var coreMap, ramMap map[string]float64
+	switch cat.GetUsageType() {
+	case "OnDemand":
+		// Spot SKUs carry usage type "Preemptible", but guard the description
+		// too so a mislabeled catalog entry can't pollute the on-demand table.
+		if strings.Contains(desc, "Spot") || strings.Contains(desc, "Preemptible") {
+			return
+		}
+		coreMap, ramMap = p.core, p.ram
+	case "Preemptible":
+		coreMap, ramMap = p.spotCore, p.spotRam
+	default:
+		return
+	}
 	for _, t := range priceExcludeTokens {
 		if strings.Contains(desc, t) {
 			return
@@ -85,9 +108,9 @@ func (p *gcpPricer) indexSku(sku *billingpb.Sku) {
 	var target map[string]float64
 	switch {
 	case strings.Contains(desc, "Core"):
-		target = p.core
+		target = coreMap
 	case strings.Contains(desc, "Ram"):
-		target = p.ram
+		target = ramMap
 	default:
 		return
 	}
@@ -106,10 +129,18 @@ func (p *gcpPricer) Price(ctx context.Context, in model.Instance) (PriceInfo, bo
 	if p.err != nil {
 		return PriceInfo{}, false
 	}
+	coreMap, ramMap := p.core, p.ram
+	source := "gcp-billing-catalog"
+	if in.ProvisioningModel == model.ProvisioningSpot {
+		// Never fall back to on-demand rates for a Spot instance: a missing
+		// Spot SKU leaves it unpriced rather than overstated ~4x.
+		coreMap, ramMap = p.spotCore, p.spotRam
+		source = "gcp-billing-catalog-spot"
+	}
 	fam := familyOf(in.MachineType)
 	key := in.Region + "/" + fam
-	corePrice, hasCore := p.core[key]
-	ramPrice, hasRam := p.ram[key]
+	corePrice, hasCore := coreMap[key]
+	ramPrice, hasRam := ramMap[key]
 	if !hasCore || !hasRam || in.VCPU == 0 {
 		return PriceInfo{}, false
 	}
@@ -117,7 +148,7 @@ func (p *gcpPricer) Price(ctx context.Context, in model.Instance) (PriceInfo, bo
 	if hourly <= 0 {
 		return PriceInfo{}, false
 	}
-	return mk(hourly, "gcp-billing-catalog"), true
+	return mk(hourly, source), true
 }
 
 // familyFromDesc finds a family token as a whole word in a SKU description,

@@ -114,17 +114,18 @@ func (p *Provider) toInstance(ctx context.Context, cli *ec2.Client, region strin
 	spec := p.instanceSpec(ctx, cli, itype)
 
 	in := model.Instance{
-		ID:          awssdk.ToString(vm.InstanceId),
-		Name:        tagValue(vm.Tags, "Name"),
-		Provider:    "aws",
-		Project:     "", // account id is available via STS if needed
-		Region:      region,
-		Zone:        placementZone(vm),
-		MachineType: itype,
-		VCPU:        spec.vCPU,
-		MemGB:       spec.memGB,
-		NICGbps:     spec.nicGbps,
-		Labels:      tagMap(vm.Tags),
+		ID:                awssdk.ToString(vm.InstanceId),
+		Name:              tagValue(vm.Tags, "Name"),
+		Provider:          "aws",
+		Project:           "", // account id is available via STS if needed
+		Region:            region,
+		Zone:              placementZone(vm),
+		MachineType:       itype,
+		ProvisioningModel: provisioningModel(vm),
+		VCPU:              spec.vCPU,
+		MemGB:             spec.memGB,
+		NICGbps:           spec.nicGbps,
+		Labels:            tagMap(vm.Tags),
 	}
 	if in.Name == "" {
 		in.Name = in.ID
@@ -182,6 +183,15 @@ func (p *Provider) loadVolumeIndex(ctx context.Context, cli *ec2.Client, region 
 		}
 	}
 	return idx, nil
+}
+
+// provisioningModel classifies an EC2 instance as spot or on-demand.
+// InstanceLifecycle is unset for plain on-demand instances.
+func provisioningModel(vm ec2types.Instance) string {
+	if vm.InstanceLifecycle == ec2types.InstanceLifecycleTypeSpot {
+		return model.ProvisioningSpot
+	}
+	return model.ProvisioningOnDemand
 }
 
 func placementZone(vm ec2types.Instance) string {
