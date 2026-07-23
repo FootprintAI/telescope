@@ -17,6 +17,10 @@ telescope (customer, read-only SA):  Provider(GCP|AWS) ─► Inventory ─► M
 cloud service (Footprint AI):                                                         report.json ─► recommendation
 ```
 
+## Demo
+
+![telescope scan demo](docs/demo.gif)
+
 ## Install / build
 
 ```bash
