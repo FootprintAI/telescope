@@ -21,20 +21,28 @@ type Disk struct {
 	IOPSCap float64
 }
 
+// Provisioning models. Spot/preemptible capacity is billed at different rates
+// than on-demand, so pricing must know which one an instance uses.
+const (
+	ProvisioningOnDemand = "on-demand"
+	ProvisioningSpot     = "spot"
+)
+
 // Instance is a single VM (GCE instance or EC2 instance).
 type Instance struct {
-	ID          string
-	Name        string
-	Provider    string // "gcp" | "aws" | "mock"
-	Project     string // GCP project / AWS account
-	Region      string
-	Zone        string
-	MachineType string  // e.g. e2-standard-4, m5.xlarge
-	VCPU        float64 // logical vCPUs
-	MemGB       float64
-	NICGbps     float64 // NIC line-rate ceiling in Gbit/s (0 = unknown)
-	Disks       []Disk
-	Labels      map[string]string
+	ID                string
+	Name              string
+	Provider          string // "gcp" | "aws" | "mock"
+	Project           string // GCP project / AWS account
+	Region            string
+	Zone              string
+	MachineType       string  // e.g. e2-standard-4, m5.xlarge
+	ProvisioningModel string  // ProvisioningOnDemand | ProvisioningSpot ("" = unknown)
+	VCPU              float64 // logical vCPUs
+	MemGB             float64
+	NICGbps           float64 // NIC line-rate ceiling in Gbit/s (0 = unknown)
+	Disks             []Disk
+	Labels            map[string]string
 
 	// Metrics is filled in by Provider.FetchMetrics. Nil until then.
 	Metrics *Metrics

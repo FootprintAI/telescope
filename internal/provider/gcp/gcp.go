@@ -157,17 +157,18 @@ func (p *Provider) toInstance(ctx context.Context, project, zone, region string,
 	spec := p.machineSpec(ctx, project, zone, mtName)
 
 	in := model.Instance{
-		ID:          strconv.FormatUint(vm.GetId(), 10),
-		Name:        vm.GetName(),
-		Provider:    "gcp",
-		Project:     project,
-		Region:      region,
-		Zone:        zone,
-		MachineType: mtName,
-		VCPU:        spec.vCPU,
-		MemGB:       spec.memGB,
-		NICGbps:     nicGbps(mtName, spec.vCPU),
-		Labels:      vm.GetLabels(),
+		ID:                strconv.FormatUint(vm.GetId(), 10),
+		Name:              vm.GetName(),
+		Provider:          "gcp",
+		Project:           project,
+		Region:            region,
+		Zone:              zone,
+		MachineType:       mtName,
+		ProvisioningModel: provisioningModel(vm),
+		VCPU:              spec.vCPU,
+		MemGB:             spec.memGB,
+		NICGbps:           nicGbps(mtName, spec.vCPU),
+		Labels:            vm.GetLabels(),
 	}
 	for _, ad := range vm.GetDisks() {
 		disk := model.Disk{
@@ -210,6 +211,16 @@ func (p *Provider) machineSpec(ctx context.Context, project, zone, name string) 
 	}
 	p.mtCache[key] = s
 	return s
+}
+
+// provisioningModel classifies a VM's scheduling as spot or on-demand.
+// Preemptible covers legacy preemptible VMs that predate the SPOT model.
+func provisioningModel(vm *computepb.Instance) string {
+	s := vm.GetScheduling()
+	if s.GetProvisioningModel() == "SPOT" || s.GetPreemptible() {
+		return model.ProvisioningSpot
+	}
+	return model.ProvisioningOnDemand
 }
 
 // ListNodePools enumerates GKE nodepools (inventory only).

@@ -28,7 +28,8 @@ func (p *Provider) ListInstances(ctx context.Context) ([]model.Instance, error) 
 		return model.Instance{
 			ID: id, Name: name, Provider: "mock", Project: "demo",
 			Region: "us-central1", Zone: "us-central1-a",
-			MachineType: mt, VCPU: vcpu, MemGB: mem, NICGbps: nic,
+			MachineType: mt, ProvisioningModel: model.ProvisioningOnDemand,
+			VCPU: vcpu, MemGB: mem, NICGbps: nic,
 			Disks:  []model.Disk{disk(name+"-boot", 100, 3000, "pd-ssd")},
 			Labels: map[string]string{"env": "prod"},
 		}
