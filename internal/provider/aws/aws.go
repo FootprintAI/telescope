@@ -187,7 +187,7 @@ func (p *Provider) loadVolumeIndex(ctx context.Context, cli *ec2.Client, region 
 
 // provisioningModel classifies an EC2 instance as spot or on-demand.
 // InstanceLifecycle is unset for plain on-demand instances.
-func provisioningModel(vm ec2types.Instance) string {
+func provisioningModel(vm ec2types.Instance) model.ProvisioningModel {
 	if vm.InstanceLifecycle == ec2types.InstanceLifecycleTypeSpot {
 		return model.ProvisioningSpot
 	}

@@ -215,9 +215,9 @@ func (p *Provider) machineSpec(ctx context.Context, project, zone, name string) 
 
 // provisioningModel classifies a VM's scheduling as spot or on-demand.
 // Preemptible covers legacy preemptible VMs that predate the SPOT model.
-func provisioningModel(vm *computepb.Instance) string {
+func provisioningModel(vm *computepb.Instance) model.ProvisioningModel {
 	s := vm.GetScheduling()
-	if s.GetProvisioningModel() == "SPOT" || s.GetPreemptible() {
+	if s.GetProvisioningModel() == computepb.Scheduling_SPOT.String() || s.GetPreemptible() {
 		return model.ProvisioningSpot
 	}
 	return model.ProvisioningOnDemand

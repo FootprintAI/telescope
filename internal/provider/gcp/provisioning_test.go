@@ -13,7 +13,7 @@ func TestProvisioningModel(t *testing.T) {
 	cases := []struct {
 		name string
 		vm   *computepb.Instance
-		want string
+		want model.ProvisioningModel
 	}{
 		{
 			name: "spot",
