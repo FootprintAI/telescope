@@ -9,6 +9,7 @@ package gcp
 import (
 	"context"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
@@ -219,6 +220,12 @@ func (p *Provider) ListNodePools(ctx context.Context) ([]model.NodePool, error) 
 			Parent: fmt.Sprintf("projects/%s/locations/-", project),
 		})
 		if err != nil {
+			// A project without GKE has the container API disabled; that
+			// means "no clusters", not a failed scan.
+			if strings.Contains(err.Error(), "SERVICE_DISABLED") {
+				fmt.Fprintf(os.Stderr, "warning: gcp: Kubernetes Engine API disabled in %s; skipping GKE inventory\n", project)
+				continue
+			}
 			return nil, fmt.Errorf("gcp: list clusters (%s): %w", project, err)
 		}
 		for _, c := range resp.GetClusters() {
