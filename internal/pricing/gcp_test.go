@@ -100,6 +100,60 @@ func TestPricePicksRatesByProvisioningModel(t *testing.T) {
 	}
 }
 
+func TestBilledVCPUSharedCoreFraction(t *testing.T) {
+	cases := []struct {
+		machineType string
+		logicalVCPU float64
+		want        float64
+	}{
+		{"e2-micro", 2, 0.25},
+		{"e2-small", 2, 0.5},
+		{"e2-medium", 2, 1.0},
+		{"E2-MICRO", 2, 0.25}, // case-insensitive
+		{"e2-standard-4", 4, 4},
+		{"c3d-highmem-8", 8, 8},
+	}
+	for _, tc := range cases {
+		if got := billedVCPU(tc.machineType, tc.logicalVCPU); got != tc.want {
+			t.Errorf("billedVCPU(%q, %v) = %v, want %v", tc.machineType, tc.logicalVCPU, got, tc.want)
+		}
+	}
+}
+
+func TestPriceUsesBilledVCPUForSharedCore(t *testing.T) {
+	p := newTestPricer()
+	key := "us-west1/e2"
+	p.core[key], p.ram[key] = 0.02181159, 0.00292353
+
+	micro := model.Instance{
+		Region: "us-west1", MachineType: "e2-micro",
+		ProvisioningModel: model.ProvisioningOnDemand,
+		VCPU:              2, MemGB: 1,
+	}
+	got, ok := p.Price(context.Background(), micro)
+	if !ok {
+		t.Fatal("e2-micro not priced")
+	}
+	want := 0.25*0.02181159 + 1*0.00292353 // billed at 0.25 vCPU, not the logical 2
+	if diff := got.HourlyUSD - round4(want); diff > 1e-6 || diff < -1e-6 {
+		t.Errorf("e2-micro hourly = %v, want %v", got.HourlyUSD, round4(want))
+	}
+
+	standard := model.Instance{
+		Region: "us-west1", MachineType: "e2-standard-4",
+		ProvisioningModel: model.ProvisioningOnDemand,
+		VCPU:              4, MemGB: 16,
+	}
+	got, ok = p.Price(context.Background(), standard)
+	if !ok {
+		t.Fatal("e2-standard-4 not priced")
+	}
+	want = 4*0.02181159 + 16*0.00292353 // unaffected: billed at the full logical count
+	if diff := got.HourlyUSD - round4(want); diff > 1e-6 || diff < -1e-6 {
+		t.Errorf("e2-standard-4 hourly = %v, want %v", got.HourlyUSD, round4(want))
+	}
+}
+
 func TestPriceSpotWithoutSpotSkuIsUnpriced(t *testing.T) {
 	p := newTestPricer()
 	key := "us-west1/c3d"

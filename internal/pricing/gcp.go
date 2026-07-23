@@ -55,6 +55,27 @@ var familyDisplay = []struct{ key, token string }{
 
 var priceExcludeTokens = []string{"Commitment", "Sole Tenancy", "Custom", "Premium"}
 
+// sharedCoreBilledVCPU maps a shared-core E2 machine type to the vCPU count
+// it is actually billed at. These types expose 2 logical vCPUs (they can
+// burst to 2) but are billed at a baseline fraction of one core; billing
+// them at the logical count overstates price by up to ~8x. N1 shared-core
+// types (f1-micro, g1-small) have their own dedicated SKUs rather than a
+// Core/Ram decomposition and are handled separately (currently unpriced).
+var sharedCoreBilledVCPU = map[string]float64{
+	"e2-micro":  0.25,
+	"e2-small":  0.5,
+	"e2-medium": 1.0,
+}
+
+// billedVCPU returns the vCPU count a machine type is actually billed for,
+// which differs from its logical VCPU count for shared-core types.
+func billedVCPU(machineType string, logicalVCPU float64) float64 {
+	if v, ok := sharedCoreBilledVCPU[strings.ToLower(machineType)]; ok {
+		return v
+	}
+	return logicalVCPU
+}
+
 func newGCPPricer(ctx context.Context, credentialsFile string) (*gcpPricer, error) {
 	var opts []option.ClientOption
 	if credentialsFile != "" {
@@ -157,7 +178,7 @@ func (p *gcpPricer) Price(ctx context.Context, in model.Instance) (PriceInfo, bo
 	if !hasCore || !hasRam || in.VCPU == 0 {
 		return PriceInfo{}, false
 	}
-	hourly := in.VCPU*corePrice + in.MemGB*ramPrice
+	hourly := billedVCPU(in.MachineType, in.VCPU)*corePrice + in.MemGB*ramPrice
 	if hourly <= 0 {
 		return PriceInfo{}, false
 	}
