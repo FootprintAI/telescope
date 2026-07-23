@@ -16,6 +16,19 @@ import (
 // computeServiceName is the Cloud Billing Catalog service id for Compute Engine.
 const computeServiceName = "services/6F81-5844-456A"
 
+// Cloud Billing Catalog usage types (Sku.Category.UsageType). Spot capacity is
+// still cataloged under the legacy "Preemptible" usage type.
+const (
+	usageOnDemand    = "OnDemand"
+	usagePreemptible = "Preemptible"
+)
+
+// PriceInfo.Source values emitted by this pricer.
+const (
+	sourceGCPCatalog     = "gcp-billing-catalog"
+	sourceGCPCatalogSpot = "gcp-billing-catalog-spot"
+)
+
 // gcpPricer resolves predefined-machine-type prices from the Cloud Billing
 // Catalog by decomposing them into per-vCPU ("Core") and per-GB ("Ram") SKUs.
 type gcpPricer struct {
@@ -84,14 +97,14 @@ func (p *gcpPricer) indexSku(sku *billingpb.Sku) {
 	desc := sku.GetDescription()
 	var coreMap, ramMap map[string]float64
 	switch cat.GetUsageType() {
-	case "OnDemand":
+	case usageOnDemand:
 		// Spot SKUs carry usage type "Preemptible", but guard the description
 		// too so a mislabeled catalog entry can't pollute the on-demand table.
 		if strings.Contains(desc, "Spot") || strings.Contains(desc, "Preemptible") {
 			return
 		}
 		coreMap, ramMap = p.core, p.ram
-	case "Preemptible":
+	case usagePreemptible:
 		coreMap, ramMap = p.spotCore, p.spotRam
 	default:
 		return
@@ -130,12 +143,12 @@ func (p *gcpPricer) Price(ctx context.Context, in model.Instance) (PriceInfo, bo
 		return PriceInfo{}, false
 	}
 	coreMap, ramMap := p.core, p.ram
-	source := "gcp-billing-catalog"
+	source := sourceGCPCatalog
 	if in.ProvisioningModel == model.ProvisioningSpot {
 		// Never fall back to on-demand rates for a Spot instance: a missing
 		// Spot SKU leaves it unpriced rather than overstated ~4x.
 		coreMap, ramMap = p.spotCore, p.spotRam
-		source = "gcp-billing-catalog-spot"
+		source = sourceGCPCatalogSpot
 	}
 	fam := familyOf(in.MachineType)
 	key := in.Region + "/" + fam

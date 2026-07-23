@@ -21,11 +21,14 @@ type Disk struct {
 	IOPSCap float64
 }
 
-// Provisioning models. Spot/preemptible capacity is billed at different rates
-// than on-demand, so pricing must know which one an instance uses.
+// ProvisioningModel is how an instance's capacity is provisioned and billed.
+// Spot/preemptible capacity is billed at different rates than on-demand, so
+// pricing must know which one an instance uses.
+type ProvisioningModel string
+
 const (
-	ProvisioningOnDemand = "on-demand"
-	ProvisioningSpot     = "spot"
+	ProvisioningOnDemand ProvisioningModel = "on-demand"
+	ProvisioningSpot     ProvisioningModel = "spot"
 )
 
 // Instance is a single VM (GCE instance or EC2 instance).
@@ -36,9 +39,9 @@ type Instance struct {
 	Project           string // GCP project / AWS account
 	Region            string
 	Zone              string
-	MachineType       string  // e.g. e2-standard-4, m5.xlarge
-	ProvisioningModel string  // ProvisioningOnDemand | ProvisioningSpot ("" = unknown)
-	VCPU              float64 // logical vCPUs
+	MachineType       string            // e.g. e2-standard-4, m5.xlarge
+	ProvisioningModel ProvisioningModel // "" = unknown
+	VCPU              float64           // logical vCPUs
 	MemGB             float64
 	NICGbps           float64 // NIC line-rate ceiling in Gbit/s (0 = unknown)
 	Disks             []Disk
