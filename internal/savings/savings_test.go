@@ -27,6 +27,19 @@ func priceOf(hourly float64) *pricing.PriceInfo {
 	return &p
 }
 
+// result builds an analyze.Result whose top normalized p95 is `top` on the CPU
+// dimension. A negative `top` models insufficient-data (no present dimension).
+func result(id string, top float64) analyze.Result {
+	if top < 0 {
+		return analyze.Result{InstanceID: id, Bound: analyze.BoundInsufficient, Norm: map[string]float64{"cpu": -1}}
+	}
+	b := analyze.BoundCPU
+	if top < analyze.Defaults().IdleFloor {
+		b = analyze.BoundIdle
+	}
+	return analyze.Result{InstanceID: id, Bound: b, Norm: map[string]float64{"cpu": top}}
+}
+
 // Acceptance criterion: the Score object carries all headline fields plus a
 // basis sub-object, and Defaults() surface the documented thresholds in basis.
 func TestComputeExposesBasisThresholds(t *testing.T) {
@@ -112,6 +125,75 @@ func TestComputeDollarFieldsOmittedWithoutPricing(t *testing.T) {
 		if _, ok := m[k]; !ok {
 			t.Errorf("key %q must be present in JSON even without pricing", k)
 		}
+	}
+}
+
+// Acceptance criterion (#6): underutilized_spend_pct is the spend-weighted share
+// of instances whose top utilization is below the 30% threshold.
+func TestUnderutilizedSpendPct(t *testing.T) {
+	insts := []model.Instance{inst("under"), inst("busy")}
+	results := []analyze.Result{result("under", 0.10), result("busy", 0.50)}
+	// equal price → under-utilized instance is exactly half the spend.
+	prices := map[string]*pricing.PriceInfo{"under": priceOf(1.0), "busy": priceOf(1.0)}
+
+	s := Compute(insts, results, prices, fixedNow, Defaults())
+
+	if s.UnderutilizedSpendPct == nil {
+		t.Fatal("UnderutilizedSpendPct must be non-nil with pricing")
+	}
+	if got := *s.UnderutilizedSpendPct; got != 50 {
+		t.Errorf("UnderutilizedSpendPct = %v, want 50", got)
+	}
+	if s.UnderutilizedInstancePct != 50 {
+		t.Errorf("UnderutilizedInstancePct = %v, want 50", s.UnderutilizedInstancePct)
+	}
+	if s.Basis.UnderutilizedInstances != 1 {
+		t.Errorf("basis UnderutilizedInstances = %d, want 1", s.Basis.UnderutilizedInstances)
+	}
+}
+
+// Spend-weighting must differ from count-weighting when prices are unequal: a
+// cheap idle box and an expensive busy box is low spend-pct but 50% instance-pct.
+func TestUnderutilizedSpendWeightingDiffersFromCount(t *testing.T) {
+	insts := []model.Instance{inst("cheap-idle"), inst("pricey-busy")}
+	results := []analyze.Result{result("cheap-idle", 0.05), result("pricey-busy", 0.60)}
+	prices := map[string]*pricing.PriceInfo{"cheap-idle": priceOf(1.0), "pricey-busy": priceOf(9.0)}
+
+	s := Compute(insts, results, prices, fixedNow, Defaults())
+
+	if got := *s.UnderutilizedSpendPct; got != 10 { // 1 / (1+9)
+		t.Errorf("UnderutilizedSpendPct = %v, want 10", got)
+	}
+	if s.UnderutilizedInstancePct != 50 {
+		t.Errorf("UnderutilizedInstancePct = %v, want 50", s.UnderutilizedInstancePct)
+	}
+}
+
+// The 30% threshold is strict: an instance at exactly 0.30 is NOT under-utilized.
+func TestUnderutilizedThresholdBoundary(t *testing.T) {
+	insts := []model.Instance{inst("edge")}
+	results := []analyze.Result{result("edge", 0.30)}
+	s := Compute(insts, results, map[string]*pricing.PriceInfo{"edge": priceOf(1.0)}, fixedNow, Defaults())
+	if s.UnderutilizedInstancePct != 0 {
+		t.Errorf("top==threshold must not be under-utilized; got pct %v", s.UnderutilizedInstancePct)
+	}
+}
+
+// Acceptance criterion (#6): insufficient-data instances are excluded from the
+// util numerator/denominator and counted in basis.excluded_no_data.
+func TestExcludedNoData(t *testing.T) {
+	insts := []model.Instance{inst("under"), inst("nodata")}
+	results := []analyze.Result{result("under", 0.10), result("nodata", -1)}
+	prices := map[string]*pricing.PriceInfo{"under": priceOf(1.0), "nodata": priceOf(1.0)}
+
+	s := Compute(insts, results, prices, fixedNow, Defaults())
+
+	if s.Basis.ExcludedNoData != 1 {
+		t.Errorf("basis ExcludedNoData = %d, want 1", s.Basis.ExcludedNoData)
+	}
+	// denominator is instances-with-data (1), so the one under-utilized box = 100%.
+	if s.UnderutilizedInstancePct != 100 {
+		t.Errorf("UnderutilizedInstancePct = %v, want 100 (nodata excluded from denominator)", s.UnderutilizedInstancePct)
 	}
 }
 
