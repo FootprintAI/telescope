@@ -14,6 +14,10 @@ func RenderTable(out io.Writer, r Report) {
 	fmt.Fprintf(out, "telescope report  (provider=%s, lookback=%.0fh, generated=%s)\n\n",
 		r.Provider, r.Window.LookbackHours, r.GeneratedAt.Format("2006-01-02 15:04 MST"))
 
+	if h := savingsHeadline(r.SavingsScore); h != "" {
+		fmt.Fprintf(out, "%s\n\n", h)
+	}
+
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
 	fmt.Fprintln(tw, "NAME\tTYPE\tvCPU\tMEM(GB)\tCPU p95\tMEM p95\tBOUND\t$/HR")
 	for _, ir := range r.Instances {
@@ -39,6 +43,9 @@ func RenderMarkdown(out io.Writer, r Report) {
 	fmt.Fprintf(out, "# telescope report\n\n")
 	fmt.Fprintf(out, "- **Provider:** %s\n- **Lookback:** %.0fh\n- **Generated:** %s\n\n",
 		r.Provider, r.Window.LookbackHours, r.GeneratedAt.Format("2006-01-02 15:04 MST"))
+	if h := savingsHeadline(r.SavingsScore); h != "" {
+		fmt.Fprintf(out, "## Savings Score\n\n%s\n\n", h)
+	}
 	fmt.Fprintf(out, "## Instances\n\n")
 	fmt.Fprintln(out, "| Name | Type | vCPU | Mem (GB) | CPU p95 | Mem p95 | Bound | $/hr |")
 	fmt.Fprintln(out, "|------|------|-----:|---------:|--------:|--------:|-------|-----:|")

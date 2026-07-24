@@ -69,6 +69,7 @@ type Basis struct {
 	AlwaysOnMethod         string  `json:"always_on_method"`
 	InstanceCount          int     `json:"instance_count"`
 	PricedInstances        int     `json:"priced_instances"`
+	AlwaysOnInstances      int     `json:"always_on_instances"`
 	IdleInstances          int     `json:"idle_instances"`
 	UnderutilizedInstances int     `json:"underutilized_instances"`
 	ExcludedNoData         int     `json:"excluded_no_data"`
@@ -153,6 +154,7 @@ func Compute(insts []model.Instance, results []analyze.Result, prices map[string
 		}
 	}
 	basis.UnderutilizedInstances = underutilizedCount
+	basis.AlwaysOnInstances = alwaysOnCount
 
 	s := Score{Basis: basis}
 	s.UnderutilizedInstancePct = pct(underutilizedCount, withData)

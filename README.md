@@ -85,6 +85,28 @@ fails the scan; unresolved instances are marked unpriced. Sources
   **custom** machine types are left unpriced.
 - **`static`** — embedded table (mock provider / offline demo).
 
+## Savings Score
+
+Every report leads with a **Savings Score** — a top-line waste summary in
+`report.json` (`savings_score`) and a one-line headline in the table / Markdown /
+CSV / Excel outputs:
+
+```
+Savings Score: ~$489/mo estimated recoverable (37% of spend under-utilized, 5 of 6 instances always-on)
+```
+
+- **recoverable** — 100% of monthly spend on `idle` instances + half the spend on
+  under-utilized (non-idle) instances; Spot and unpriced instances contribute $0,
+  and the figure never exceeds total spend. It's an **estimate** from on-demand list
+  price, not an invoice.
+- **under-utilized** — top p95 utilization below 30% (spend-weighted with `--pricing`,
+  instance-count-weighted without).
+- **always-on** — running ≥ 720h (from the instance's creation/launch time).
+
+Every threshold, the recoverable formula, and the counts behind each number are
+recorded in `savings_score.basis` so the figure is auditable. Without `--pricing`
+the dollar fields are omitted and the headline shows the percentage signals only.
+
 ## How workloads are classified
 
 For each instance, over the lookback window, telescope computes p50/p95/max for

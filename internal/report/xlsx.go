@@ -70,6 +70,19 @@ func RenderXLSX(out io.Writer, r Report) error {
 			[]any{"Unpriced instances", r.Cost.UnpricedInstance},
 		)
 	}
+	if s := r.SavingsScore; s != nil {
+		rows = append(rows, []any{"Savings Score", savingsHeadline(s)})
+		if s.RecoverableMonthlyUSD != nil {
+			rows = append(rows, []any{"Recoverable $/mo (est)", *s.RecoverableMonthlyUSD})
+		}
+		if s.UnderutilizedSpendPct != nil {
+			rows = append(rows, []any{"Under-utilized spend %", *s.UnderutilizedSpendPct})
+		}
+		rows = append(rows,
+			[]any{"Under-utilized instance %", s.UnderutilizedInstancePct},
+			[]any{"Always-on instance %", s.AlwaysOnInstancePct},
+		)
+	}
 	rn := 2
 	for _, row := range rows {
 		writeRow(f, sum, rn, row)
