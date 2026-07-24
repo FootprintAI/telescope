@@ -20,6 +20,10 @@ import (
 // is derived so the number is auditable by whoever reads the report.
 const recoverableFormula = "100% of monthly spend on idle instances + rightsizing_fraction × monthly spend on under-utilized (non-idle) instances; spot and unpriced instances contribute $0"
 
+// alwaysOnMethod documents, in the report's basis, how always-on is derived and
+// its limitation, so the number is auditable.
+const alwaysOnMethod = "running hours since creation ≥ always_on_hours; instances without a creation timestamp are counted in always_on_unknown and never counted as always-on (sample-density fallback not yet implemented)"
+
 // Config tunes the score. Zero value is not valid; use Defaults().
 type Config struct {
 	// UnderutilizedThreshold: an instance whose top normalized p95 utilization
@@ -62,6 +66,7 @@ type Basis struct {
 	AlwaysOnHours          float64 `json:"always_on_hours"`
 	RightsizingFraction    float64 `json:"rightsizing_fraction"`
 	RecoverableFormula     string  `json:"recoverable_formula"`
+	AlwaysOnMethod         string  `json:"always_on_method"`
 	InstanceCount          int     `json:"instance_count"`
 	PricedInstances        int     `json:"priced_instances"`
 	IdleInstances          int     `json:"idle_instances"`
@@ -85,12 +90,23 @@ func Compute(insts []model.Instance, results []analyze.Result, prices map[string
 		AlwaysOnHours:          cfg.AlwaysOnHours,
 		RightsizingFraction:    cfg.RightsizingFraction,
 		RecoverableFormula:     recoverableFormula,
+		AlwaysOnMethod:         alwaysOnMethod,
 		InstanceCount:          len(insts),
 	}
 
 	var totalMonthly, underutilizedMonthly float64
-	var withData, underutilizedCount int
+	var withData, underutilizedCount, alwaysOnCount int
 	for _, in := range insts {
+		// Always-on is over ALL listed instances (not just those with metrics):
+		// an unknown-creation instance is counted in AlwaysOnUnknown, never as
+		// always-on.
+		switch {
+		case in.CreatedAt.IsZero():
+			basis.AlwaysOnUnknown++
+		case in.RunningHours(now) >= cfg.AlwaysOnHours:
+			alwaysOnCount++
+		}
+
 		var monthly float64
 		var priced bool
 		if prices != nil {
@@ -126,8 +142,8 @@ func Compute(insts []model.Instance, results []analyze.Result, prices map[string
 
 	s := Score{Basis: basis}
 	s.UnderutilizedInstancePct = pct(underutilizedCount, withData)
+	s.AlwaysOnInstancePct = pct(alwaysOnCount, len(insts))
 
-	// TODO(#7): compute AlwaysOnInstancePct from model.CreatedAt (+ sample-density fallback).
 	// TODO(#8): compute RecoverableMonthlyUSD from idle + rightsized under-utilized spend.
 
 	if prices != nil {

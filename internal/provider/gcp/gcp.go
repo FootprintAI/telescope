@@ -12,6 +12,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	compute "cloud.google.com/go/compute/apiv1"
 	computepb "cloud.google.com/go/compute/apiv1/computepb"
@@ -152,6 +153,20 @@ func (p *Provider) loadDiskIndex(ctx context.Context, project string) (map[strin
 	return idx, nil
 }
 
+// parseCreationTimestamp parses a GCE instance creationTimestamp (RFC3339, e.g.
+// "2023-01-15T12:00:00.000-08:00"). An empty or malformed value yields the zero
+// time so a bad timestamp never fails the scan (it just marks uptime unknown).
+func parseCreationTimestamp(s string) time.Time {
+	if s == "" {
+		return time.Time{}
+	}
+	t, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		return time.Time{}
+	}
+	return t
+}
+
 func (p *Provider) toInstance(ctx context.Context, project, zone, region string, vm *computepb.Instance, diskIdx map[string]*computepb.Disk) model.Instance {
 	mtName := lastSegment(vm.GetMachineType())
 	spec := p.machineSpec(ctx, project, zone, mtName)
@@ -168,6 +183,7 @@ func (p *Provider) toInstance(ctx context.Context, project, zone, region string,
 		VCPU:              spec.vCPU,
 		MemGB:             spec.memGB,
 		NICGbps:           nicGbps(mtName, spec.vCPU),
+		CreatedAt:         parseCreationTimestamp(vm.GetCreationTimestamp()),
 		Labels:            vm.GetLabels(),
 	}
 	for _, ad := range vm.GetDisks() {

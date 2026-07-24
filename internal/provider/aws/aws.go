@@ -11,6 +11,7 @@ package aws
 import (
 	"context"
 	"fmt"
+	"time"
 
 	awssdk "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -125,6 +126,7 @@ func (p *Provider) toInstance(ctx context.Context, cli *ec2.Client, region strin
 		VCPU:              spec.vCPU,
 		MemGB:             spec.memGB,
 		NICGbps:           spec.nicGbps,
+		CreatedAt:         launchedAt(vm),
 		Labels:            tagMap(vm.Tags),
 	}
 	if in.Name == "" {
@@ -187,6 +189,12 @@ func (p *Provider) loadVolumeIndex(ctx context.Context, cli *ec2.Client, region 
 
 // provisioningModel classifies an EC2 instance as spot or on-demand.
 // InstanceLifecycle is unset for plain on-demand instances.
+// launchedAt returns the EC2 instance launch time, or the zero time when it is
+// unset (uptime unknown).
+func launchedAt(vm ec2types.Instance) time.Time {
+	return awssdk.ToTime(vm.LaunchTime)
+}
+
 func provisioningModel(vm ec2types.Instance) model.ProvisioningModel {
 	if vm.InstanceLifecycle == ec2types.InstanceLifecycleTypeSpot {
 		return model.ProvisioningSpot
