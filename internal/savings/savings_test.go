@@ -197,6 +197,44 @@ func TestExcludedNoData(t *testing.T) {
 	}
 }
 
+// Acceptance criterion (#7): always_on_instance_pct is the share of listed
+// instances whose running-hours-since-creation reach the 720h threshold.
+// Instances without a creation timestamp are counted in basis.always_on_unknown
+// and never counted as always-on (conservative).
+func TestAlwaysOnInstancePct(t *testing.T) {
+	old := fixedNow.Add(-1000 * time.Hour)  // > 720h ago -> always-on
+	fresh := fixedNow.Add(-100 * time.Hour) // < 720h ago -> not
+	insts := []model.Instance{
+		{ID: "old", CreatedAt: old},
+		{ID: "fresh", CreatedAt: fresh},
+		{ID: "unknown"}, // no CreatedAt
+	}
+	results := []analyze.Result{result("old", 0.5), result("fresh", 0.5), result("unknown", 0.5)}
+
+	s := Compute(insts, results, nil, fixedNow, Defaults())
+
+	// 1 of 3 listed instances is always-on.
+	if got := s.AlwaysOnInstancePct; got != round2(100.0/3.0) {
+		t.Errorf("AlwaysOnInstancePct = %v, want %v", got, round2(100.0/3.0))
+	}
+	if s.Basis.AlwaysOnUnknown != 1 {
+		t.Errorf("basis AlwaysOnUnknown = %d, want 1", s.Basis.AlwaysOnUnknown)
+	}
+	if s.Basis.AlwaysOnMethod == "" {
+		t.Error("basis AlwaysOnMethod must document the derivation + limitation")
+	}
+}
+
+// Boundary: exactly 720h of running time counts as always-on (inclusive).
+func TestAlwaysOnBoundary(t *testing.T) {
+	insts := []model.Instance{{ID: "edge", CreatedAt: fixedNow.Add(-720 * time.Hour)}}
+	results := []analyze.Result{result("edge", 0.5)}
+	s := Compute(insts, results, nil, fixedNow, Defaults())
+	if s.AlwaysOnInstancePct != 100 {
+		t.Errorf("720h must count as always-on; got %v", s.AlwaysOnInstancePct)
+	}
+}
+
 // Empty fleet must not panic or divide by zero.
 func TestComputeEmptyFleet(t *testing.T) {
 	s := Compute(nil, nil, nil, fixedNow, Defaults())

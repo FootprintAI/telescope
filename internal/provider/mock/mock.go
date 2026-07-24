@@ -5,6 +5,7 @@ package mock
 import (
 	"context"
 	"math"
+	"time"
 
 	"github.com/footprintai/telescope/internal/model"
 )
@@ -24,23 +25,27 @@ func disk(name string, gb, iops float64, t string) model.Disk {
 
 // ListInstances returns a representative mix of workload shapes.
 func (p *Provider) ListInstances(ctx context.Context) ([]model.Instance, error) {
-	base := func(id, name, mt string, vcpu, mem, nic float64) model.Instance {
+	now := time.Now().UTC()
+	// ageHours spreads creation times so always-on (≥720h) is demonstrable
+	// offline: most instances are long-lived, one is freshly launched.
+	base := func(id, name, mt string, vcpu, mem, nic, ageHours float64) model.Instance {
 		return model.Instance{
 			ID: id, Name: name, Provider: "mock", Project: "demo",
 			Region: "us-central1", Zone: "us-central1-a",
 			MachineType: mt, ProvisioningModel: model.ProvisioningOnDemand,
 			VCPU: vcpu, MemGB: mem, NICGbps: nic,
-			Disks:  []model.Disk{disk(name+"-boot", 100, 3000, "pd-ssd")},
-			Labels: map[string]string{"env": "prod"},
+			CreatedAt: now.Add(-time.Duration(ageHours) * time.Hour),
+			Disks:     []model.Disk{disk(name+"-boot", 100, 3000, "pd-ssd")},
+			Labels:    map[string]string{"env": "prod"},
 		}
 	}
 	return []model.Instance{
-		base("i-001", "web-1", "e2-standard-4", 4, 16, 10),     // cpu-bound, low mem
-		base("i-002", "web-2", "e2-standard-4", 4, 16, 10),     // idle
-		base("i-003", "cache-1", "n2-highmem-8", 8, 64, 16),    // memory-bound
-		base("i-004", "api-1", "e2-standard-8", 8, 32, 16),     // balanced
-		base("i-005", "edge-1", "n2-standard-4", 4, 16, 32),    // network-bound
-		base("i-006", "batch-1", "e2-standard-16", 16, 64, 32), // idle/over-provisioned
+		base("i-001", "web-1", "e2-standard-4", 4, 16, 10, 2000),     // cpu-bound, always-on
+		base("i-002", "web-2", "e2-standard-4", 4, 16, 10, 5000),     // idle, always-on
+		base("i-003", "cache-1", "n2-highmem-8", 8, 64, 16, 3000),    // memory-bound, always-on
+		base("i-004", "api-1", "e2-standard-8", 8, 32, 16, 100),      // balanced, freshly launched
+		base("i-005", "edge-1", "n2-standard-4", 4, 16, 32, 1200),    // network-bound, always-on
+		base("i-006", "batch-1", "e2-standard-16", 16, 64, 32, 4000), // idle/over-provisioned, always-on
 	}, nil
 }
 

@@ -47,8 +47,25 @@ type Instance struct {
 	Disks             []Disk
 	Labels            map[string]string
 
+	// CreatedAt is when the instance was created/launched (zero = unknown).
+	// Used to gauge always-on workloads.
+	CreatedAt time.Time
+
 	// Metrics is filled in by Provider.FetchMetrics. Nil until then.
 	Metrics *Metrics
+}
+
+// RunningHours is the elapsed time in hours since the instance was created, as
+// of now. It returns 0 when CreatedAt is unknown or in the future.
+func (i Instance) RunningHours(now time.Time) float64 {
+	if i.CreatedAt.IsZero() {
+		return 0
+	}
+	d := now.Sub(i.CreatedAt)
+	if d < 0 {
+		return 0
+	}
+	return d.Hours()
 }
 
 // DiskGB is the sum of all attached disk sizes.
