@@ -8,23 +8,26 @@ import (
 	"github.com/footprintai/telescope/internal/analyze"
 	"github.com/footprintai/telescope/internal/model"
 	"github.com/footprintai/telescope/internal/pricing"
+	"github.com/footprintai/telescope/internal/savings"
 	"github.com/footprintai/telescope/internal/version"
 )
 
-// SchemaVersion is bumped on breaking changes to the report contract.
-const SchemaVersion = "1"
+// SchemaVersion is bumped on changes to the report contract. v2 adds the
+// additive savings_score block.
+const SchemaVersion = "2"
 
 // Report is the full Stage-A artifact.
 type Report struct {
-	Schema      string           `json:"schema"`
-	Tool        string           `json:"tool"`
-	GeneratedAt time.Time        `json:"generated_at"`
-	Provider    string           `json:"provider"`
-	Window      WindowInfo       `json:"window"`
-	Instances   []InstanceReport `json:"instances"`
-	NodePools   []model.NodePool `json:"node_pools"`
-	Summary     Summary          `json:"summary"`
-	Cost        *CostSummary     `json:"cost,omitempty"`
+	Schema       string           `json:"schema"`
+	Tool         string           `json:"tool"`
+	GeneratedAt  time.Time        `json:"generated_at"`
+	Provider     string           `json:"provider"`
+	Window       WindowInfo       `json:"window"`
+	Instances    []InstanceReport `json:"instances"`
+	NodePools    []model.NodePool `json:"node_pools"`
+	Summary      Summary          `json:"summary"`
+	Cost         *CostSummary     `json:"cost,omitempty"`
+	SavingsScore *savings.Score   `json:"savings_score,omitempty"`
 }
 
 // WindowInfo records the lookback used for metrics.
@@ -101,6 +104,8 @@ func Build(provider string, w model.Window, insts []model.Instance, pools []mode
 		cost.TotalMonthlyUSD = round2(cost.TotalHourlyUSD * pricing.HoursPerMonth)
 		rep.Cost = cost
 	}
+	score := savings.Compute(insts, results, prices, time.Now().UTC(), savings.Defaults())
+	rep.SavingsScore = &score
 	return rep
 }
 
