@@ -88,35 +88,86 @@ func Compute(insts []model.Instance, results []analyze.Result, prices map[string
 		InstanceCount:          len(insts),
 	}
 
-	var totalMonthly float64
+	var totalMonthly, underutilizedMonthly float64
+	var withData, underutilizedCount int
 	for _, in := range insts {
+		var monthly float64
+		var priced bool
 		if prices != nil {
 			if pi := prices[in.ID]; pi != nil {
+				priced = true
+				monthly = pi.MonthlyUSD
 				basis.PricedInstances++
-				totalMonthly += pi.MonthlyUSD
+				totalMonthly += monthly
 			}
 		}
-		if r, ok := byID[in.ID]; ok && r.Bound == analyze.BoundIdle {
+
+		// Instances with no present utilization dimension (insufficient-data) are
+		// excluded from the util numerator and denominator, but a priced one still
+		// counts toward total spend — we just don't claim it as waste.
+		r, hasResult := byID[in.ID]
+		top, hasData := topNorm(r)
+		if !hasResult || !hasData {
+			basis.ExcludedNoData++
+			continue
+		}
+		withData++
+		if r.Bound == analyze.BoundIdle {
 			basis.IdleInstances++
 		}
+		if top < cfg.UnderutilizedThreshold {
+			underutilizedCount++
+			if priced {
+				underutilizedMonthly += monthly
+			}
+		}
 	}
+	basis.UnderutilizedInstances = underutilizedCount
 
 	s := Score{Basis: basis}
+	s.UnderutilizedInstancePct = pct(underutilizedCount, withData)
 
-	// TODO(#6): compute UnderutilizedInstancePct / UnderutilizedSpendPct.
 	// TODO(#7): compute AlwaysOnInstancePct from model.CreatedAt (+ sample-density fallback).
 	// TODO(#8): compute RecoverableMonthlyUSD from idle + rightsized under-utilized spend.
 
 	if prices != nil {
 		total := round2(totalMonthly)
 		s.TotalMonthlyUSD = &total
-		var underPct float64 // TODO(#6)
+		var underPct float64
+		if totalMonthly > 0 {
+			underPct = round2(underutilizedMonthly / totalMonthly * 100)
+		}
 		s.UnderutilizedSpendPct = &underPct
 		var recoverable float64 // TODO(#8)
 		s.RecoverableMonthlyUSD = &recoverable
 	}
 
 	return s
+}
+
+// topNorm returns the highest present normalized-p95 utilization across an
+// instance's dimensions; ok is false when no dimension was present (the source
+// metrics were unavailable → insufficient-data).
+func topNorm(r analyze.Result) (top float64, ok bool) {
+	top = -1
+	for _, v := range r.Norm {
+		if v < 0 {
+			continue
+		}
+		if v > top {
+			top = v
+		}
+		ok = true
+	}
+	return top, ok
+}
+
+// pct returns 100*n/d rounded, or 0 when d is 0.
+func pct(n, d int) float64 {
+	if d == 0 {
+		return 0
+	}
+	return round2(float64(n) / float64(d) * 100)
 }
 
 func round2(f float64) float64 { return float64(int(f*100+0.5)) / 100 }
