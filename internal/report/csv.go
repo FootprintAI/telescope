@@ -12,6 +12,17 @@ func RenderCSV(out io.Writer, r Report) error {
 	w := csv.NewWriter(out)
 	defer w.Flush()
 
+	// Lead with the Savings Score headline (single-cell row + blank separator)
+	// so a human opening the file sees the waste number first.
+	if h := savingsHeadline(r.SavingsScore); h != "" {
+		if err := w.Write([]string{h}); err != nil {
+			return err
+		}
+		if err := w.Write([]string{}); err != nil {
+			return err
+		}
+	}
+
 	header := []string{
 		"name", "instance_id", "provider", "project", "region", "zone",
 		"machine_type", "vcpu", "mem_gb", "disk_gb", "nic_gbps",
