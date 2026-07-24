@@ -95,6 +95,7 @@ func Compute(insts []model.Instance, results []analyze.Result, prices map[string
 	}
 
 	var totalMonthly, underutilizedMonthly float64
+	var idleMonthly, rightsizableMonthly float64
 	var withData, underutilizedCount, alwaysOnCount int
 	for _, in := range insts {
 		// Always-on is over ALL listed instances (not just those with metrics):
@@ -128,13 +129,26 @@ func Compute(insts []model.Instance, results []analyze.Result, prices map[string
 			continue
 		}
 		withData++
-		if r.Bound == analyze.BoundIdle {
+		idle := r.Bound == analyze.BoundIdle
+		under := top < cfg.UnderutilizedThreshold
+		if idle {
 			basis.IdleInstances++
 		}
-		if top < cfg.UnderutilizedThreshold {
+		if under {
 			underutilizedCount++
 			if priced {
 				underutilizedMonthly += monthly
+			}
+		}
+		// Recoverable spend, excluding spot (already cheap/ephemeral) and
+		// unpriced instances: idle boxes are fully reclaimable, under-utilized
+		// (non-idle) boxes are rightsizable at RightsizingFraction.
+		if priced && in.ProvisioningModel != model.ProvisioningSpot {
+			switch {
+			case idle:
+				idleMonthly += monthly
+			case under:
+				rightsizableMonthly += monthly
 			}
 		}
 	}
@@ -144,8 +158,6 @@ func Compute(insts []model.Instance, results []analyze.Result, prices map[string
 	s.UnderutilizedInstancePct = pct(underutilizedCount, withData)
 	s.AlwaysOnInstancePct = pct(alwaysOnCount, len(insts))
 
-	// TODO(#8): compute RecoverableMonthlyUSD from idle + rightsized under-utilized spend.
-
 	if prices != nil {
 		total := round2(totalMonthly)
 		s.TotalMonthlyUSD = &total
@@ -154,7 +166,11 @@ func Compute(insts []model.Instance, results []analyze.Result, prices map[string
 			underPct = round2(underutilizedMonthly / totalMonthly * 100)
 		}
 		s.UnderutilizedSpendPct = &underPct
-		var recoverable float64 // TODO(#8)
+
+		recoverable := round2(idleMonthly + cfg.RightsizingFraction*rightsizableMonthly)
+		if recoverable > total { // invariant guard; should not trigger
+			recoverable = total
+		}
 		s.RecoverableMonthlyUSD = &recoverable
 	}
 

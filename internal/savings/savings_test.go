@@ -235,6 +235,50 @@ func TestAlwaysOnBoundary(t *testing.T) {
 	}
 }
 
+// Acceptance criterion (#8): recoverable = 100% of idle spend + rightsizing
+// fraction of under-utilized-but-not-idle spend.
+func TestRecoverableDollars(t *testing.T) {
+	insts := []model.Instance{inst("idle"), inst("under"), inst("busy")}
+	results := []analyze.Result{
+		result("idle", 0.05),  // idle -> 100% recoverable
+		result("under", 0.20), // under-utilized, not idle -> 50% recoverable
+		result("busy", 0.60),  // busy -> 0
+	}
+	prices := map[string]*pricing.PriceInfo{
+		"idle": priceOf(1.0), "under": priceOf(1.0), "busy": priceOf(1.0),
+	}
+
+	s := Compute(insts, results, prices, fixedNow, Defaults())
+
+	m := pricing.HoursPerMonth
+	want := round2(1.0*m + 0.5*(1.0*m)) // idle full + half of under
+	if s.RecoverableMonthlyUSD == nil {
+		t.Fatal("RecoverableMonthlyUSD must be non-nil with pricing")
+	}
+	if got := *s.RecoverableMonthlyUSD; got != want {
+		t.Errorf("RecoverableMonthlyUSD = %v, want %v", got, want)
+	}
+	// Invariant: recoverable never exceeds total.
+	if *s.RecoverableMonthlyUSD > *s.TotalMonthlyUSD {
+		t.Errorf("recoverable %v exceeds total %v", *s.RecoverableMonthlyUSD, *s.TotalMonthlyUSD)
+	}
+}
+
+// Spot instances contribute $0 to recoverable even when idle and priced.
+func TestRecoverableExcludesSpot(t *testing.T) {
+	spot := inst("spot-idle")
+	spot.ProvisioningModel = model.ProvisioningSpot
+	insts := []model.Instance{spot}
+	results := []analyze.Result{result("spot-idle", 0.05)}
+	prices := map[string]*pricing.PriceInfo{"spot-idle": priceOf(1.0)}
+
+	s := Compute(insts, results, prices, fixedNow, Defaults())
+
+	if got := *s.RecoverableMonthlyUSD; got != 0 {
+		t.Errorf("spot instance must contribute $0 to recoverable, got %v", got)
+	}
+}
+
 // Empty fleet must not panic or divide by zero.
 func TestComputeEmptyFleet(t *testing.T) {
 	s := Compute(nil, nil, nil, fixedNow, Defaults())
